@@ -422,11 +422,11 @@ function renderPartTypeField(
   labelOptions: readonly PartType[],
   assignIssues: ReturnType<typeof getAssignFormIssues>,
 ): string {
-  const candidates = collectPartTypeCandidates(state, labelOptions);
-  const ranked = rankPartTypeMatches(candidates, state.labelSearch.query);
+  const ranked = rankPartTypeMatches(labelOptions, state.labelSearch.query);
   const shown = ranked.slice(0, 48);
 
-  const selected = candidates.find((pt) => pt.id === state.assignForm.existingPartTypeId) ?? null;
+  const resolveSelected = collectPartTypeCandidates(state, labelOptions);
+  const selected = resolveSelected.find((pt) => pt.id === state.assignForm.existingPartTypeId) ?? null;
   const isCreating = state.assignForm.partTypeMode === "new";
   const createToggleLabel = isCreating ? "− Cancel new part type" : "+ New part type";
   const createToggleAction = isCreating ? "existing" : "new";
