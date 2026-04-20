@@ -442,10 +442,21 @@ describe("RewriteAppController", () => {
     quantityInput!.value = "0";
     quantityInput!.dispatchEvent(new Event("input", { bubbles: true }));
 
-    const locationInput = document.querySelector<HTMLInputElement>('input[name="assign.location"]');
-    expect(locationInput).not.toBeNull();
-    locationInput!.value = "Shelf A";
-    locationInput!.dispatchEvent(new Event("input", { bubbles: true }));
+    const openCreateLocation = document.querySelector<HTMLButtonElement>('[data-action="open-path-create"][data-kind="location"]');
+    expect(openCreateLocation).not.toBeNull();
+    openCreateLocation!.click();
+    await flush();
+
+    const locationNameInput = document.querySelector<HTMLInputElement>('input[name="pathPicker.location.createName"]');
+    expect(locationNameInput).not.toBeNull();
+    locationNameInput!.value = "Shelf A";
+    locationNameInput!.dispatchEvent(new Event("input", { bubbles: true }));
+    await flush();
+
+    const commitLocation = document.querySelector<HTMLButtonElement>('[data-action="commit-path-create"][data-kind="location"]');
+    expect(commitLocation).not.toBeNull();
+    commitLocation!.click();
+    await flush();
 
     const assignForm = document.querySelector<HTMLFormElement>('form[data-form="assign"]');
     expect(assignForm).not.toBeNull();
