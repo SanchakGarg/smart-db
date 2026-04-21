@@ -73,6 +73,7 @@ export interface InventoryUiState {
   readonly expandedId: string | null;
   readonly expandedItems: ReadonlyMap<string, PartTypeItemsResponse>;
   readonly expandedErrors: ReadonlyMap<string, string>;
+  readonly detailPartTypeId: string | null;
 }
 
 export interface PathPickerUiState {
@@ -189,6 +190,7 @@ export const defaultInventoryUiState: InventoryUiState = {
   expandedId: null,
   expandedItems: new Map(),
   expandedErrors: new Map(),
+  detailPartTypeId: null,
 };
 
 export const defaultPathPickerState: PathPickerUiState = {

@@ -422,6 +422,16 @@ export class RewriteAppController {
           void this.toggleInventoryExpand(actionEl.dataset.partTypeId);
         }
         break;
+      case "open-part-detail":
+        if (actionEl.dataset.partTypeId) {
+          void this.openPartDetail(actionEl.dataset.partTypeId);
+        }
+        break;
+      case "close-part-detail":
+        this.patch({
+          inventoryUi: { ...this.state.inventoryUi, detailPartTypeId: null },
+        });
+        break;
       case "download-labels":
         void this.handleDownloadLatestBatchLabels();
         break;
@@ -1963,6 +1973,33 @@ export class RewriteAppController {
       }
     } finally {
       this.patch({ pendingAction: null });
+    }
+  }
+
+  private async openPartDetail(partTypeId: string): Promise<void> {
+    this.patch({
+      inventoryUi: { ...this.state.inventoryUi, detailPartTypeId: partTypeId },
+    });
+
+    if (this.state.inventoryUi.expandedItems.has(partTypeId)) {
+      return;
+    }
+
+    try {
+      const items = await api.getPartTypeItems(partTypeId);
+      const expandedItems = new Map(this.state.inventoryUi.expandedItems);
+      const expandedErrors = new Map(this.state.inventoryUi.expandedErrors);
+      expandedItems.set(partTypeId, items);
+      expandedErrors.delete(partTypeId);
+      this.patch({
+        inventoryUi: { ...this.state.inventoryUi, expandedItems, expandedErrors },
+      });
+    } catch (caught) {
+      const expandedErrors = new Map(this.state.inventoryUi.expandedErrors);
+      expandedErrors.set(partTypeId, errorMessage(caught));
+      this.patch({
+        inventoryUi: { ...this.state.inventoryUi, expandedErrors },
+      });
     }
   }
 
