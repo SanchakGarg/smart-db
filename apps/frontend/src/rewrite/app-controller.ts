@@ -1716,9 +1716,6 @@ export class RewriteAppController {
       assignForm: {
         ...defaultAssignForm,
         qrCode: code,
-        entityKind: "bulk",
-        countable: false,
-        unitSymbol: "kg",
       },
       labelSearch: {
         query: "",

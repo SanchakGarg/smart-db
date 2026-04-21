@@ -8,6 +8,7 @@ import {
 import {
   actionLabel,
   describePartDbSyncFailure,
+  eventIconInfo,
   formatCategoryPath,
   formatQuantity,
   formatTimestamp,
@@ -892,16 +893,22 @@ function renderActivityTab(state: RewriteUiState): string {
       ${events.length === 0 && state.scanHistory.length === 0 ? `<p class="activity-empty">No activity yet. Events appear here as you scan and update inventory.</p>` : ""}
       ${events.length > 0 ? `
         <ul class="activity-list">
-          ${events.map((event) => `
+          ${events.map((event) => {
+            const icon = eventIconInfo(event.event);
+            return `
             <li class="activity-item">
-              <div class="activity-item-header">
-                <span class="activity-action">${escapeHtml(`${actionLabel(event.event)} by ${event.actor ?? "system"}`)}</span>
-                <span class="activity-time">${escapeHtml(formatTimestamp(event.createdAt))}</span>
+              <span class="activity-icon tone-${icon.tone}" aria-hidden="true">${escapeHtml(icon.glyph)}</span>
+              <div class="activity-item-body">
+                <div class="activity-item-header">
+                  <span class="activity-action">${escapeHtml(`${actionLabel(event.event)} by ${event.actor ?? "system"}`)}</span>
+                  <span class="activity-time">${escapeHtml(formatTimestamp(event.createdAt))}</span>
+                </div>
+                ${event.partName ? `<span class="activity-item-name">${escapeHtml(event.partName)}</span>` : ""}
+                <span class="activity-detail">${escapeHtml(buildActivityDetail(event))}</span>
               </div>
-              ${event.partName ? `<span class="activity-item-name">${escapeHtml(event.partName)}</span>` : ""}
-              <span class="activity-detail">${escapeHtml(buildActivityDetail(event))}</span>
             </li>
-          `).join("")}
+          `;
+          }).join("")}
         </ul>
       ` : ""}
       ${state.scanHistory.length > 0 ? `
@@ -909,11 +916,14 @@ function renderActivityTab(state: RewriteUiState): string {
         <ul class="activity-list">
           ${state.scanHistory.map((entry, index) => `
             <li class="activity-item">
-              <div class="activity-item-header">
-                <code class="activity-code">${escapeHtml(entry.code)}</code>
-                <span class="activity-time">${escapeHtml(formatTimestamp(entry.timestamp))}</span>
+              <span class="activity-icon tone-info" aria-hidden="true">◎</span>
+              <div class="activity-item-body">
+                <div class="activity-item-header">
+                  <code class="activity-code">${escapeHtml(entry.code)}</code>
+                  <span class="activity-time">${escapeHtml(formatTimestamp(entry.timestamp))}</span>
+                </div>
+                <span class="activity-detail">${escapeHtml(scanModeLabel(entry.mode))}</span>
               </div>
-              <span class="activity-detail">${escapeHtml(scanModeLabel(entry.mode))}</span>
             </li>
           `).join("")}
         </ul>
