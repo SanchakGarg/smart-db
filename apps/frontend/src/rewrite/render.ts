@@ -732,11 +732,8 @@ function renderInventoryTab(state: RewriteUiState): string {
                       ${subPath ? `<span>${escapeHtml(subPath)}</span>` : ""}
                     </div>
                     <div class="inventory-row-quantity">
-                      ${row.countable
-                        ? row.onHand > 0
-                          ? `<span class="qty-value">${row.instanceCount}</span><span class="qty-unit">tracked · ${escapeHtml(formatQuantity(row.onHand))} ${escapeHtml(row.unit.symbol)} pooled</span>`
-                          : `<span class="qty-value">${row.instanceCount}</span><span class="qty-unit">tracked</span>`
-                        : `<span class="qty-value">${escapeHtml(formatQuantity(row.onHand))}</span><span class="qty-unit">${escapeHtml(row.unit.symbol)}</span>`}
+                      <span class="qty-value">${row.countable ? row.instanceCount : escapeHtml(formatQuantity(row.onHand))}</span>
+                      <span class="qty-unit">${escapeHtml(row.unit.symbol)}</span>
                     </div>
                   </button>
                   <button type="button" class="inventory-row-arrow" data-action="open-part-detail" data-part-type-id="${attr(row.id)}" aria-label="Open ${attr(row.canonicalName)} details">
