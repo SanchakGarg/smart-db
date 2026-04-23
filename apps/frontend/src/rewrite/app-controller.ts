@@ -13,6 +13,7 @@ import {
   ApiClientError,
   api,
   downloadQrBatchLabelsPdf,
+  generateAndDownloadQrBatch,
   loginUrl,
 } from "../api";
 import {
@@ -446,6 +447,11 @@ export class RewriteAppController {
       case "download-labels":
         void this.handleDownloadLatestBatchLabels();
         break;
+      case "generate-qr": {
+        const size = actionEl.dataset.size === "small" ? "small" : "large";
+        void this.handleGenerateQr(size);
+        break;
+      }
       case "sync-drain":
         void this.handleDrainPartDbSync();
         break;
@@ -1331,6 +1337,21 @@ export class RewriteAppController {
         },
       });
       await this.loadAuthenticatedData();
+    } catch (caught) {
+      if (!this.handleApiFailure(caught)) {
+        this.addToast(errorMessage(caught), "error");
+      }
+    } finally {
+      this.patch({ pendingAction: null });
+    }
+  }
+
+  private async handleGenerateQr(size: "small" | "large"): Promise<void> {
+    this.patch({ pendingAction: "batch" });
+    try {
+      await generateAndDownloadQrBatch(size);
+      await this.loadAuthenticatedData();
+      this.addToast(`QR sheet generated (${size})`, "success");
     } catch (caught) {
       if (!this.handleApiFailure(caught)) {
         this.addToast(errorMessage(caught), "error");

@@ -42,6 +42,7 @@ const apiMock = vi.hoisted(() => ({
 const apiModuleMocks = vi.hoisted(() => ({
   loginUrl: vi.fn(() => "/login"),
   downloadQrBatchLabelsPdf: vi.fn(),
+  generateAndDownloadQrBatch: vi.fn(),
 }));
 
 vi.mock("../api", () => ({
@@ -57,6 +58,7 @@ vi.mock("../api", () => ({
   api: apiMock,
   loginUrl: apiModuleMocks.loginUrl,
   downloadQrBatchLabelsPdf: apiModuleMocks.downloadQrBatchLabelsPdf,
+  generateAndDownloadQrBatch: apiModuleMocks.generateAndDownloadQrBatch,
 }));
 
 const cameraMocks = vi.hoisted(() => ({
@@ -298,7 +300,7 @@ describe("RewriteAppController", () => {
     controller.dispose();
   });
 
-  it("rejects invalid batch input before calling the API", async () => {
+  it("generates and downloads a QR sheet when a size button is clicked", async () => {
     const { startRewriteApp } = await import("./app-controller");
     apiMock.getSession.mockResolvedValueOnce({
       subject: "user-1",
@@ -309,6 +311,7 @@ describe("RewriteAppController", () => {
       issuedAt: "2026-01-01T00:00:00.000Z",
       expiresAt: null,
     });
+    apiModuleMocks.generateAndDownloadQrBatch.mockResolvedValue(undefined);
 
     const controller = startRewriteApp(document.getElementById("root")!);
     await flush();
@@ -316,18 +319,12 @@ describe("RewriteAppController", () => {
     (document.querySelector('[data-tab="admin"]') as HTMLButtonElement).click();
     await flush();
 
-    const countInput = document.querySelector<HTMLInputElement>('input[name="batch.count"]');
-    expect(countInput).not.toBeNull();
-    countInput!.value = "0";
-    countInput!.dispatchEvent(new Event("input", { bubbles: true }));
-
-    const form = document.querySelector<HTMLFormElement>('form[data-form="batch"]');
-    expect(form).not.toBeNull();
-    form!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    const largeBtn = document.querySelector<HTMLButtonElement>('[data-action="generate-qr"][data-size="large"]');
+    expect(largeBtn).not.toBeNull();
+    largeBtn!.click();
     await flush();
 
-    expect(apiMock.registerQrBatch).not.toHaveBeenCalled();
-    expect(document.body.textContent).toContain("Batch size must be between 1 and 500.");
+    expect(apiModuleMocks.generateAndDownloadQrBatch).toHaveBeenCalledWith("large");
     controller.dispose();
   });
 

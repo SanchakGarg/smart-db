@@ -16,7 +16,7 @@ import {
 } from "@smart-db/contracts";
 import { InventoryService } from "../services/inventory-service.js";
 import type { IdempotencyHooks } from "../middleware/idempotency.js";
-import { buildQrBatchLabelsPdf } from "../services/qr-batch-labels.js";
+import { buildQrBatchLabelsPdf, type QrLabelSize } from "../services/qr-batch-labels.js";
 
 interface InventoryRouteGuards {
   requireAuth: preHandlerAsyncHookHandler;
@@ -116,6 +116,17 @@ export async function registerInventoryRoutes(
   app.get("/api/qr-batches/latest", admin, async () =>
     inventoryService.getLatestQrBatch(),
   );
+
+  app.post("/api/qr-batches/generate", adminMutation, async (request, reply) => {
+    const body = request.body as { size?: unknown };
+    const size: QrLabelSize = body?.size === "small" ? "small" : "large";
+    const { batch } = inventoryService.generateQrBatch(size, request.authContext!.session.username);
+    const pdf = await buildQrBatchLabelsPdf(batch, size);
+    return reply
+      .header("Content-Type", "application/pdf")
+      .header("Content-Disposition", `attachment; filename="${safeBatchLabelsFilename(batch.id)}"`)
+      .send(Buffer.from(pdf));
+  });
 
   app.get("/api/qr-batches/:id/labels.pdf", admin, async (request, reply) => {
     const params = request.params as { id: string };

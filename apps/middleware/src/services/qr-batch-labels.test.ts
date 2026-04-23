@@ -18,18 +18,18 @@ describe("qr batch labels pdf", () => {
     expect(pdf.getPageCount()).toBe(1);
   });
 
-  it("paginates when the batch exceeds a single sheet", async () => {
-    const perPage = qrBatchLabelInternals.labelsPerPage;
+  it("generates only one page even when the batch has more codes than fit", async () => {
+    const perPage = qrBatchLabelInternals.labelsPerPage("large");
     const pdfBytes = await buildQrBatchLabelsPdf({
       id: "batch-2",
       prefix: "QR",
       startNumber: 1,
-      endNumber: perPage + 1,
+      endNumber: perPage + 10,
       actor: "labeler",
       createdAt: "2026-01-01T00:00:00.000Z",
-    });
+    }, "large");
 
     const pdf = await PDFDocument.load(pdfBytes);
-    expect(pdf.getPageCount()).toBe(2);
+    expect(pdf.getPageCount()).toBe(1);
   });
 });

@@ -352,6 +352,32 @@ export function qrBatchLabelsPdfUrl(batchId: string): string {
   return apiUrl(`/api/qr-batches/${encodeURIComponent(batchId)}/labels.pdf`);
 }
 
+export async function generateAndDownloadQrBatch(size: "small" | "large"): Promise<void> {
+  const response = await fetch(apiUrl("/api/qr-batches/generate"), {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
+    body: JSON.stringify({ size }),
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    const parsedError = body === null ? null : applicationErrorResponseSchema.safeParse(body);
+    if (parsedError?.success) {
+      throw new ApiClientError(parsedError.data.error.code, parsedError.data.error.message, parsedError.data.error.details);
+    }
+    throw new ApiClientError("transport", `Request failed with ${response.status}`);
+  }
+
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = objectUrl;
+  anchor.download = filenameFromContentDisposition(response.headers.get("Content-Disposition"), `qr-${size}-labels.pdf`);
+  anchor.click();
+  URL.revokeObjectURL(objectUrl);
+}
+
 export async function downloadQrBatchLabelsPdf(batchId: string): Promise<void> {
   const response = await fetch(apiUrl(`/api/qr-batches/${encodeURIComponent(batchId)}/labels.pdf`), {
     credentials: "include",

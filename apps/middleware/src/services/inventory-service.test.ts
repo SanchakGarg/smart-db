@@ -1142,7 +1142,7 @@ describe("InventoryService", () => {
     expect(pooled.partType.id).toBe(tracked.partType.id);
   });
 
-  it("keeps Smart DB labels exact while allowing fuzzy external barcode lookup", async () => {
+  it("returns unknown for unrecognized scan codes and rejects external barcode assignment", async () => {
     const { service } = makeService();
 
     service.registerQrBatch({
@@ -1170,45 +1170,34 @@ describe("InventoryService", () => {
       initialStatus: "available",
     });
 
+    // Fuzzy scan of a valid label (different case/separator) returns unknown — must be exact
     await expect(service.scanCode(" qr_6300 ")).resolves.toMatchObject({
       mode: "unknown",
       code: "qr_6300",
     });
 
-    service.assignQr({
-      qrCode: "ESUN-BLACK-PLA",
-      actor: "labeler",
-      entityKind: "bulk",
-      location: "Filament Shelf",
-      notes: null,
-      partType: {
-        kind: "new",
-        canonicalName: "eSUN PLA Black",
-        category: "Filament",
-        aliases: [],
+    // External / manufacturer barcode not in qrcodes table is rejected at assignment time
+    expect(() =>
+      service.assignQr({
+        qrCode: "ESUN-BLACK-PLA",
+        actor: "labeler",
+        entityKind: "bulk",
+        location: "Filament Shelf",
         notes: null,
-        imageUrl: null,
-        countable: false,
-        unit: {
-          symbol: "kg",
-          name: "Kilograms",
-          isInteger: false,
+        partType: {
+          kind: "new",
+          canonicalName: "eSUN PLA Black",
+          category: "Filament",
+          aliases: [],
+          notes: null,
+          imageUrl: null,
+          countable: false,
+          unit: { symbol: "kg", name: "Kilograms", isInteger: false },
         },
-      },
-      initialQuantity: 1,
-      minimumQuantity: 0.2,
-    });
-
-    await expect(service.scanCode(" esun_black_pla ")).resolves.toMatchObject({
-      mode: "interact",
-      qrCode: {
-        code: "ESUN-BLACK-PLA",
-        batchId: "external",
-      },
-      entity: {
-        targetType: "bulk",
-      },
-    });
+        initialQuantity: 1,
+        minimumQuantity: 0.2,
+      }),
+    ).toThrow();
   });
 
   it("rejects zero-quantity bulk assignment commands as impossible ingest", () => {
