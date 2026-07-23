@@ -1206,27 +1206,21 @@ function renderInteractCard(
       ${renderScanQuickChips(state)}
       ${(() => {
         const actions = state.scanResult.availableActions;
-        const ent = state.scanResult.entity;
-        // The primary (highlighted) action matches the item's state so a
-        // checked-out item leads with Return and an available item with Check
-        // out — instead of always promoting re-checkout.
-        const primaryAction =
-          ent.targetType === "instance"
-            ? ent.state === "checked_out"
-              ? "returned"
-              : ent.state === "available"
-                ? "checked_out"
-                : null
-            : null;
-        const primary = actions.filter((a) => a === primaryAction);
-        const secondary = actions.filter((a) => a !== primaryAction);
-        if (primary.length === 0 && secondary.length === 0) return "";
+        // The action the card leads with is already seeded into the form and
+        // expressed once — as the "Confirm <action>" submit button below. It is
+        // deliberately NOT repeated here: doing so produced a prominent button
+        // that only re-selected the already-selected action and appeared to do
+        // nothing (issue #30). So this switcher lists only the OTHER available
+        // actions; tapping one re-seeds the form and updates its Confirm button.
+        // Every scanned item (instance or bulk) then shares one layout: quick
+        // chips, a seeded form with a single Confirm, and "More actions".
+        const others = actions.filter((a) => a !== state.eventForm.event);
+        if (others.length === 0) return "";
         const renderBtn = (action: typeof actions[number]) =>
-          `<button type="button" aria-pressed="${String(state.eventForm.event === action)}" class="${state.eventForm.event === action ? "selected" : ""}" data-action="select-event-action" data-event="${attr(action)}">${escapeHtml(actionLabel(action))}</button>`;
+          `<button type="button" data-action="select-event-action" data-event="${attr(action)}">${escapeHtml(actionLabel(action))}</button>`;
         return `
-          <p class="section-label">Actions</p>
-          ${primary.length > 0 ? `<div class="action-buttons action-buttons-primary">${primary.map(renderBtn).join("")}</div>` : ""}
-          ${secondary.length > 0 ? `<div class="action-buttons action-buttons-secondary">${secondary.map(renderBtn).join("")}</div>` : ""}
+          <p class="section-label">More actions</p>
+          <div class="action-buttons action-buttons-secondary">${others.map(renderBtn).join("")}</div>
         `;
       })()}
       ${state.scanResult.availableActions.length === 0 ? `

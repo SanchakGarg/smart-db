@@ -2101,6 +2101,87 @@ describe("RewriteAppController", () => {
     controller.dispose();
   });
 
+  it("does not repeat the seeded action as an inert selector button (issue #30)", async () => {
+    const { startRewriteApp } = await import("./app-controller");
+    apiMock.getSession.mockResolvedValueOnce({
+      subject: "user-1",
+      username: "maker-jo",
+      name: "Jo",
+      email: "jo@example.com",
+      roles: ["smartdb.admin"],
+      issuedAt: "2026-01-01T00:00:00.000Z",
+      expiresAt: null,
+    });
+    apiMock.scan.mockResolvedValueOnce({
+      mode: "interact",
+      qrCode: {
+        code: "QR-9401",
+        batchId: "batch-1",
+        status: "assigned",
+        assignedKind: "instance",
+        assignedId: "instance-9401",
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-01T00:00:00.000Z",
+      },
+      entity: {
+        id: "instance-9401",
+        targetType: "instance",
+        qrCode: "QR-9401",
+        partType,
+        location: "Shelf A",
+        state: "available",
+        assignee: null,
+        partDbSyncStatus: "never",
+        quantity: null,
+        minimumQuantity: null,
+      },
+      recentEvents: [],
+      availableActions: ["moved", "checked_out", "consumed", "damaged", "lost", "disposed"],
+      partDb: { configured: false, connected: false, message: "not found" },
+      canReverseIngest: true,
+      canEditSharedType: true,
+    });
+    apiMock.getPartTypeItems.mockResolvedValue({ bulkStocks: [], instances: [] });
+
+    const controller = startRewriteApp(document.getElementById("root")!);
+    await flush();
+
+    const scanInput = document.querySelector<HTMLInputElement>('input[name="scanCode"]')!;
+    scanInput.value = "QR-9401";
+    scanInput.dispatchEvent(new Event("input", { bubbles: true }));
+    document.querySelector<HTMLFormElement>('form[data-form="scan"]')!
+      .dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    await flush();
+
+    const selectorLabels = () =>
+      Array.from(
+        document.querySelectorAll<HTMLButtonElement>('[data-action="select-event-action"]'),
+      ).map((button) => button.textContent?.trim());
+
+    // The seeded action (Check out) is expressed only as the Confirm submit —
+    // it must NOT also appear as an action-selector button that does nothing.
+    const submit = document.querySelector<HTMLButtonElement>('form[data-form="event"] button[type="submit"]')!;
+    expect(submit.textContent?.trim()).toBe("Confirm Check out");
+    expect(selectorLabels()).not.toContain("Check out");
+    // The alternate actions are offered under "More actions".
+    expect(document.body.textContent).toContain("More actions");
+    expect(selectorLabels()).toContain("Move");
+
+    // Switching action re-seeds the form: Confirm follows the new action, and
+    // the previously-seeded action (Check out) now joins the switcher.
+    const moveButton = Array.from(
+      document.querySelectorAll<HTMLButtonElement>('[data-action="select-event-action"]'),
+    ).find((button) => button.dataset.event === "moved")!;
+    moveButton.click();
+    await flush();
+
+    const submitAfter = document.querySelector<HTMLButtonElement>('form[data-form="event"] button[type="submit"]')!;
+    expect(submitAfter.textContent?.trim()).toBe("Confirm Move");
+    expect(selectorLabels()).not.toContain("Move");
+    expect(selectorLabels()).toContain("Check out");
+    controller.dispose();
+  });
+
   it("closes the scan-edit panel and discards unsaved form fields", async () => {
     const { startRewriteApp } = await import("./app-controller");
     apiMock.getSession.mockResolvedValueOnce({
